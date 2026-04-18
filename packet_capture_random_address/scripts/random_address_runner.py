@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -58,7 +59,7 @@ def main() -> None:
             duration_seconds=args.duration,
         )
 
-    print(json.dumps(stats.__dict__, ensure_ascii=True, indent=2))
+    print(json.dumps(asdict(stats), ensure_ascii=True, indent=2))
     print(f"Saved generated endpoints to: {args.output}")
 
 

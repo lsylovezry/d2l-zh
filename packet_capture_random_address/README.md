@@ -57,6 +57,7 @@ sudo python3 scripts/run_both.py \
   --capture-count 5000 \
   --capture-timeout 5 \
   --loopback-only \
+  --send-udp \
   --addresses-output outputs/generated_addresses.jsonl \
   --packets-output outputs/packets.jsonl
 ```

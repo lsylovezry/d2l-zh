@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 import sys
 import threading
+from dataclasses import asdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +57,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="generate only loopback endpoints to keep traffic local",
     )
+    parser.add_argument(
+        "--send-udp",
+        action="store_true",
+        help="send a UDP byte to each generated endpoint",
+    )
     parser.add_argument("--seed", type=int, default=None, help="optional random seed")
     return parser
 
@@ -79,6 +86,10 @@ def main() -> None:
     capture_thread.start()
 
     generator = RandomAddressGenerator(seed=args.seed)
+    udp_sock: socket.socket | None = None
+    if args.send_udp:
+        udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
     with args.addresses_output.open("w", encoding="utf-8") as fp:
 
         def operation() -> None:
@@ -90,19 +101,23 @@ def main() -> None:
                 )
                 + "\n"
             )
+            if udp_sock is not None:
+                udp_sock.sendto(b"x", (endpoint.ip, endpoint.port))
 
         generator_stats = run_at_rate(
             operation=operation,
             target_per_second=args.rate,
             duration_seconds=args.duration,
         )
+    if udp_sock is not None:
+        udp_sock.close()
 
     capture_thread.join()
 
     print(
         json.dumps(
             {
-                "generator": generator_stats.__dict__,
+                "generator": asdict(generator_stats),
                 "sniffer": sniffer_stats,
             },
             ensure_ascii=True,
